@@ -1,0 +1,9 @@
+
+lab1.elf:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+00010074 <main>:
+   10074:	00000513          	li	a0,0
+   10078:	00008067          	ret

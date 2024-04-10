@@ -1,7 +1,7 @@
-
+#include "function.h"
 int main(){ 
-    int a = 4930;
-    int b = 5894;
-    int result = a*b;
-    return result;
+    int a = 5;
+    int b = 7;
+    int temp = mul(a,b);
+    return 0;
 }

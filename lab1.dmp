@@ -1,0 +1,10 @@
+
+lab1.elf:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+00010074 <main>:
+   10074:	01bb6537          	lui	a0,0x1bb6
+   10078:	18c50513          	addi	a0,a0,396 # 1bb618c <__global_pointer$+0x1ba490c>
+   1007c:	00008067          	ret
