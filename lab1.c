@@ -1,7 +1,7 @@
-#include std
+
 int main(){ 
-    int a = 5;
-    int b = 7;
+    int a = 4930;
+    int b = 5894;
     int result = a*b;
     return result;
 }
