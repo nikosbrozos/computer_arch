@@ -51,7 +51,25 @@ module processor(
 	output logic   		mem_wb_valid_inst);
 
 // Pipeline register enables
-logic 			if_id_enable, id_ex_enable, ex_mem_enable, mem_wb_enable;
+logic 			if_id_enable, id_ex_enable, ex_mem_enable, mem_wb_enable, stall_enable;
+
+always_comp begin
+	if(id_rega_out == id_ex_dest_reg_idx || id_regb_out == id_ex_dest_reg_idx)
+		stall_enable = 1;
+	else
+		stall_enable = 0;
+end
+
+always_comp begin
+	if(stall_enable = 1)
+		id_ex_enable = 0;
+		ex_mem_enable = 0;
+		mem_wb_enable = 0;
+	else
+		id_ex_enable = 1;
+		ex_mem_enable = 1;
+		mem_wb_enable = 1;
+end
 
 
 // Outputs from ID stage
@@ -221,7 +239,7 @@ id_stage id_stage_0 (
 //            ID/EX Pipeline Register           //
 //                                              //
 //////////////////////////////////////////////////
-assign id_ex_enable =1; // disabled when HzDU initiates a stall
+//assign id_ex_enable =1; // disabled when HzDU initiates a stall
 // synopsys sync_set_rst "rst"
 always_ff @(posedge clk or posedge rst) begin
 	if (rst) begin //sys_rst
@@ -308,7 +326,7 @@ ex_stage ex_stage_0 (
 //           EX/MEM Pipeline Register           //
 //                                              //
 //////////////////////////////////////////////////
-assign ex_mem_enable = 1; // always enabled
+//assign ex_mem_enable = 1; // always enabled
 // synopsys sync_set_rst "rst"
 always_ff @(posedge clk or posedge rst) begin
 	if (rst) begin
@@ -379,7 +397,7 @@ mem_stage mem_stage_0 (
 //           MEM/WB Pipeline Register           //
 //                                              //
 //////////////////////////////////////////////////
-assign mem_wb_enable = 1; // always enabled
+//assign mem_wb_enable = 1; // always enabled
 // synopsys sync_set_rst "rst"
 always_ff @(posedge clk or posedge rst) begin
 	if (rst) begin
