@@ -53,24 +53,26 @@ module processor(
 // Pipeline register enables
 logic 			if_id_enable, id_ex_enable, ex_mem_enable, mem_wb_enable, stall_enable;
 
-always_comp begin
-	if(id_rega_out == id_ex_dest_reg_idx || id_regb_out == id_ex_dest_reg_idx)
+//assign stall_enable = (id_rega_out == id_ex_dest_reg_idx || id_regb_out == id_ex_dest_reg_idx) ? 1 : 0;
+
+always_comp begin 																	//checks for a stall
+	if (id_rega_out == id_ex_dest_reg_idx || id_regb_out == id_ex_dest_reg_idx)
 		stall_enable = 1;
 	else
 		stall_enable = 0;
 end
 
-always_comp begin
-	if(stall_enable = 1)
-		id_ex_enable = 0;
-		ex_mem_enable = 0;
-		mem_wb_enable = 0;
+
+always_comp begin                  //if there is a stall, data flows without change (nop) through:
+	if(stall_enable)		 
+		id_ex_enable = 0;		 //execute
+		ex_mem_enable = 0;		 //memory
+		mem_wb_enable = 0;       //writeback
 	else
 		id_ex_enable = 1;
 		ex_mem_enable = 1;
 		mem_wb_enable = 1;
 end
-
 
 // Outputs from ID stage
 logic           id_reg_wr_out;
@@ -183,7 +185,7 @@ if_stage if_stage_0 (
 assign if_id_enable = 1;
 
 always_ff @(posedge clk or posedge rst) begin
-	if(rst) begin
+	if(rst || ex_take_branch_out) begin
 		if_id_PC         <=  0;
 		if_id_IR         <=  `NOOP_INST;
 		if_id_NPC        <=  0;
@@ -242,7 +244,7 @@ id_stage id_stage_0 (
 //assign id_ex_enable =1; // disabled when HzDU initiates a stall
 // synopsys sync_set_rst "rst"
 always_ff @(posedge clk or posedge rst) begin
-	if (rst) begin //sys_rst
+	if (rst || ex_take_branch_out) begin //sys_rst
 		//Control
 		id_ex_funct3		<=  0;
 		id_ex_opa_select    <=  `ALU_OPA_IS_REGA;
@@ -293,6 +295,7 @@ always_ff @(posedge clk or posedge rst) begin
 		end // if
     end // else: !if(rst)
 end // always
+
 
 //////////////////////////////////////////////////
 //                                              //
@@ -366,6 +369,10 @@ always_ff @(posedge clk or posedge rst) begin
 	end // else: !if(rst)
 end // always
 
+always_comp begin							//if branch is taken
+	if (ex_take_branch_out)				
+		if_PC_out = ex_target_PC_out;		//assign new PC
+end
    
 //////////////////////////////////////////////////
 //                                              //
