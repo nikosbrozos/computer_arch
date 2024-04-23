@@ -53,26 +53,11 @@ module processor(
 // Pipeline register enables
 logic 			if_id_enable, id_ex_enable, ex_mem_enable, mem_wb_enable, stall_enable;
 
-//assign stall_enable = (id_rega_out == id_ex_dest_reg_idx || id_regb_out == id_ex_dest_reg_idx) ? 1 : 0;
+logic[4:0] rs1;
+logic[4:0] rs2;
 
-always_comp begin 																	//checks for a stall
-	if (id_rega_out == id_ex_dest_reg_idx || id_regb_out == id_ex_dest_reg_idx)
-		stall_enable = 1;
-	else
-		stall_enable = 0;
-end
-
-
-always_comp begin                  //if there is a stall, data flows without change (nop) through:
-	if(stall_enable)		 
-		id_ex_enable = 0;		 //execute
-		ex_mem_enable = 0;		 //memory
-		mem_wb_enable = 0;       //writeback
-	else
-		id_ex_enable = 1;
-		ex_mem_enable = 1;
-		mem_wb_enable = 1;
-end
+assign rs1 = if_id_IR[19:15];
+assign rs2 = if_id_IR[24:20];
 
 // Outputs from ID stage
 logic           id_reg_wr_out;
@@ -145,6 +130,26 @@ logic [31:0] 	wb_reg_wr_data_out;
 
 //Output Memory
 
+always_comb begin																  //checks for a stall
+	if ((rs1 == id_ex_dest_reg_idx) || (rs2 == id_ex_dest_reg_idx))
+		stall_enable = 1;
+	else
+		stall_enable = 0;
+end
+
+
+always_comb begin                  //if there is a stall, data flows without change (nop) through:
+	if(stall_enable) begin		 
+		id_ex_enable = 0;		   //execute
+		ex_mem_enable = 0;		   //memory
+		mem_wb_enable = 0;
+	end         //writeback
+	else begin
+		id_ex_enable = 1;
+		ex_mem_enable = 1;
+		mem_wb_enable = 1;
+	end
+end
 
 assign im_command=`BUS_LOAD;
 
@@ -369,7 +374,7 @@ always_ff @(posedge clk or posedge rst) begin
 	end // else: !if(rst)
 end // always
 
-always_comp begin							//if branch is taken
+always_comb begin							//if branch is taken
 	if (ex_take_branch_out)				
 		if_PC_out = ex_target_PC_out;		//assign new PC
 end
