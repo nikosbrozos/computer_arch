@@ -130,24 +130,23 @@ logic [31:0] 	wb_reg_wr_data_out;
 
 //Output Memory
 
+
+
 always_comb begin																  //checks for a stall
-	if ((rs1 == id_ex_dest_reg_idx) || (rs2 == id_ex_dest_reg_idx))
+	if ((((rs1 == id_ex_dest_reg_idx) || (rs1 == ex_mem_dest_reg_idx) || (rs1 == mem_wb_dest_reg_idx)) && (rs1 !=0)) ||
+	   ((rs2 == id_ex_dest_reg_idx) || (rs2 == ex_mem_dest_reg_idx) || (rs2 == mem_wb_dest_reg_idx)) && (rs2 != 0))
 		stall_enable = 1;
-	else
+	else 
 		stall_enable = 0;
 end
 
 
 always_comb begin                  //if there is a stall, data flows without change (nop) through:
-	if(stall_enable) begin		 
-		id_ex_enable = 0;		   //execute
-		ex_mem_enable = 0;		   //memory
-		mem_wb_enable = 0;
-	end         //writeback
+	if(stall_enable & ~ex_mem_take_branch) begin		 
+		if_id_enable = 0;		   //fetch
+	end        
 	else begin
-		id_ex_enable = 1;
-		ex_mem_enable = 1;
-		mem_wb_enable = 1;
+		if_id_enable = 1;
 	end
 end
 
@@ -169,9 +168,10 @@ if_stage if_stage_0 (
 .clk 				(clk),
 .rst 				(rst),
 .mem_wb_valid_inst	(mem_wb_valid_inst),
-.ex_take_branch_out	(ex_mem_take_branch),
-.ex_target_PC_out	(ex_mem_target_PC),
+.ex_take_branch_out	(ex_take_branch_out),
+.ex_target_PC_out	(ex_target_PC_out),
 .Imem2proc_data		(instruction),
+.PC_stall           (stall_enable),
 
 
 // Outputs
@@ -187,7 +187,7 @@ if_stage if_stage_0 (
 //            IF/ID Pipeline Register           //
 //                                              //
 //////////////////////////////////////////////////
-assign if_id_enable = 1;
+//assign if_id_enable = 1;
 
 always_ff @(posedge clk or posedge rst) begin
 	if(rst || ex_take_branch_out) begin
@@ -200,7 +200,7 @@ always_ff @(posedge clk or posedge rst) begin
 		if_id_PC         <=  if_PC_out;
 		if_id_NPC        <=  if_NPC_out;
 		if_id_IR         <=  if_IR_out;
-        if_id_valid_inst <= if_valid_inst_out;
+        if_id_valid_inst <= if_valid_inst_out; 
     end 
 end 
 
@@ -246,10 +246,10 @@ id_stage id_stage_0 (
 //            ID/EX Pipeline Register           //
 //                                              //
 //////////////////////////////////////////////////
-//assign id_ex_enable =1; // disabled when HzDU initiates a stall
+assign id_ex_enable =1; // disabled when HzDU initiates a stall
 // synopsys sync_set_rst "rst"
 always_ff @(posedge clk or posedge rst) begin
-	if (rst || ex_take_branch_out) begin //sys_rst
+	if (rst || ex_take_branch_out || stall_enable) begin //sys_rst
 		//Control
 		id_ex_funct3		<=  0;
 		id_ex_opa_select    <=  `ALU_OPA_IS_REGA;
@@ -334,7 +334,7 @@ ex_stage ex_stage_0 (
 //           EX/MEM Pipeline Register           //
 //                                              //
 //////////////////////////////////////////////////
-//assign ex_mem_enable = 1; // always enabled
+assign ex_mem_enable = 1; // always enabled
 // synopsys sync_set_rst "rst"
 always_ff @(posedge clk or posedge rst) begin
 	if (rst) begin
@@ -374,10 +374,6 @@ always_ff @(posedge clk or posedge rst) begin
 	end // else: !if(rst)
 end // always
 
-always_comb begin							//if branch is taken
-	if (ex_take_branch_out)				
-		if_PC_out = ex_target_PC_out;		//assign new PC
-end
    
 //////////////////////////////////////////////////
 //                                              //
@@ -409,7 +405,7 @@ mem_stage mem_stage_0 (
 //           MEM/WB Pipeline Register           //
 //                                              //
 //////////////////////////////////////////////////
-//assign mem_wb_enable = 1; // always enabled
+assign mem_wb_enable = 1; // always enabled
 // synopsys sync_set_rst "rst"
 always_ff @(posedge clk or posedge rst) begin
 	if (rst) begin
