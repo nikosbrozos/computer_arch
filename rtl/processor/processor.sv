@@ -131,10 +131,8 @@ logic [31:0] 	wb_reg_wr_data_out;
 //Output Memory
 
 
-
 always_comb begin																  //checks for a stall
-	if ((((rs1 == id_ex_dest_reg_idx) || (rs1 == ex_mem_dest_reg_idx) || (rs1 == mem_wb_dest_reg_idx)) && (rs1 !=0)) ||
-	   ((rs2 == id_ex_dest_reg_idx) || (rs2 == ex_mem_dest_reg_idx) || (rs2 == mem_wb_dest_reg_idx)) && (rs2 != 0))
+	if ((((rs1 == id_ex_dest_reg_idx) && (rs1 !=0)) || ((rs2 == id_ex_dest_reg_idx) && (rs2 != 0))) && (id_rd_mem_out))
 		stall_enable = 1;
 	else 
 		stall_enable = 0;
@@ -288,8 +286,12 @@ always_ff @(posedge clk or posedge rst) begin
 			
 			id_ex_PC            <=  if_id_PC;
 			id_ex_IR            <=  if_id_IR;
-			id_ex_rega          <=  id_rega_out;
-			id_ex_regb          <=  id_regb_out;
+			id_ex_rega          <=  rs1 == id_ex_dest_reg_idx && rs1!=0 ? ex_alu_result_out :
+									rs1 == ex_mem_dest_reg_idx && rs1!=0 ? mem_result_out :
+									rs1 == mem_wb_dest_reg_idx && rs1!=0 ? wb_reg_wr_data_out : id_rega_out;
+			id_ex_regb          <=  rs2 == id_ex_dest_reg_idx && rs2!=0 ? ex_alu_result_out :
+									rs2 == ex_mem_dest_reg_idx && rs2!=0 ? mem_result_out :
+									rs2 == mem_wb_dest_reg_idx && rs2!=0 ? wb_reg_wr_data_out : id_regb_out;
 			id_ex_imm			<=  id_immediate_out;
 			id_ex_dest_reg_idx  <=  id_dest_reg_idx_out;
 			
