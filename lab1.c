@@ -1,9 +1,16 @@
-
 int main() {
-    int temp = 0;
-    int matrix[3][3] = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-           temp = matrix[i][j] + 2; }
+    int a=0;
+    int b=0;
+    int result, i;
+    int c=1;
+
+    for(i = 0; i<10; i++){
+        a += 2;
+        b = a - i*2;
         }
-return temp;}
+    if (b>a){
+        c = 2;
+    }        
+    result = (a+b)/c;
+        
+return result;}
